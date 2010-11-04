@@ -11,99 +11,97 @@
 		<cfargument name="sortColumn" type="string" default="sortOrder">
 		<cfargument name="scope" type="string" default="">
 		<cfset variables.wheels.class.simpleSorting = Duplicate(arguments)>
-		<cfset variables.wheels.class.simpleSorting.scope = ListChangeDelims(variables.wheels.class.simpleSorting.scope,",",",")>
-		<cfset beforeCreate(methods="$setDefaultSortOrder")>
-		<cfset beforeUpdate(methods="$checkSortOrderBeforeUpdate")>
-		<cfset afterSave(methods="$updateTableAfterSave")>
-		<cfset afterDelete(methods="$updateTableAfterDelete")>
+		<cfset variables.wheels.class.simpleSorting.scope = ListChangeDelims(variables.wheels.class.simpleSorting.scope, ",", ",")>
+		<cfset beforeValidationOnCreate(methods="$simpleSortingSetDefaultSortOrder")>
+		<cfset beforeUpdate(methods="$simpleSortingCheckSortOrderBeforeUpdate")>
+		<cfset afterSave(methods="$simpleSortingUpdateTableAfterSave")>
+		<cfset afterDelete(methods="$simpleSortingUpdateTableAfterDelete")>
 	</cffunction>
 	
 	
-	<cffunction name="$getSortColumn" returntype="string" mixin="model" output="false">
-		<cfreturn variables.wheels.class.simpleSorting.sortColumn> 
-	</cffunction>
-
-
-	<cffunction name="$getSortScope" returntype="string" mixin="model" output="false">
-		<cfreturn variables.wheels.class.simpleSorting.scope>
-	</cffunction>
-	
-	
-	<cffunction name="$setDefaultSortOrder" returntype="boolean" mixin="model" output="false">
-		<cfset variables.previousSortOrder = $getMaxSortOrder() + 1>
-		<cfif not StructKeyExists(this,$getSortColumn()) or not IsNumeric(this[$getSortColumn()]) or this[$getSortColumn()] eq 0 or this[$getSortColumn()] gt variables.previousSortOrder>
-			<cfset this[$getSortColumn()] = variables.previousSortOrder>
+	<cffunction name="$simpleSortingSetDefaultSortOrder" returntype="boolean" mixin="model" output="false">
+		<cfset variables.previousSortOrder = $simpleSortingGetMaxSortOrder() + 1>
+		<cfif not StructKeyExists(this,variables.wheels.class.simpleSorting.sortColumn) or not IsNumeric(this[variables.wheels.class.simpleSorting.sortColumn]) or this[variables.wheels.class.simpleSorting.sortColumn] eq 0 or this[variables.wheels.class.simpleSorting.sortColumn] gt variables.previousSortOrder>
+			<cfset this[variables.wheels.class.simpleSorting.sortColumn] = variables.previousSortOrder>
 		</cfif>
 		<cfreturn true>
 	</cffunction>
 	
 	
-	<cffunction name="$getMaxSortOrder" returntype="numeric" mixin="model" output="false">
+	<cffunction name="$simpleSortingGetMaxSortOrder" returntype="numeric" mixin="model" output="false">
 		<cfset var loc = {}>
-		<cfset loc.result = 0>
 		<cfset loc.where = "">
-		<cfloop list="#$getSortScope()#" index="loc.scope">
-			<cfif Len(loc.where) gt 0>
-				<cfset loc.where = loc.where & " AND ">
-			</cfif>
-			<cfset loc.where = loc.where & "#loc.scope# = '#this[loc.scope]#'">
-		</cfloop>
-		<cfset loc.result = this.maximum(property=$getSortColumn(),where=loc.where,reload=true)>
-		<cfif not IsNumeric(loc.result)>
-			<cfset loc.result = 0>
+		<cfif ListLen(variables.wheels.class.simpleSorting.scope)>
+			<cfloop list="#variables.wheels.class.simpleSorting.scope#" index="loc.scope">
+				<cfif Len(loc.where) gt 0>
+					<cfset loc.where = loc.where & " AND ">
+				</cfif>
+				<cfset loc.where = loc.where & "#loc.scope#='#this[loc.scope]#'">
+			</cfloop>
 		</cfif>
+		<cfset loc.result = Val(this.maximum(property=variables.wheels.class.simpleSorting.sortColumn, where=loc.where, reload=true))>
 		<cfreturn loc.result>
 	</cffunction>
 	
 
-	<cffunction name="$checkSortOrderBeforeUpdate" returntype="boolean" mixin="model" output="false">
+	<cffunction name="$simpleSortingCheckSortOrderBeforeUpdate" returntype="boolean" mixin="model" output="false">
 		<cfset var nextAvailableSortOrder = 0>
-		<cfset variables.previousSortOrder = variables.$persistedProperties[$getSortColumn()]>
-		<cfif StructKeyExists(this,$getSortColumn()) and hasChanged($getSortColumn())>
+		<cfset variables.previousSortOrder = variables.$persistedProperties[variables.wheels.class.simpleSorting.sortColumn]>
+		<cfif StructKeyExists(this,variables.wheels.class.simpleSorting.sortColumn) and hasChanged(variables.wheels.class.simpleSorting.sortColumn)>
 			<cfset nextAvailableSortOrder = $getMaxSortOrder() + 1>
-			<cfif this[$getSortColumn()] eq 0 or this[$getSortColumn()] gt nextAvailableSortOrder>
-				<cfset this[$getSortColumn()] = nextAvailableSortOrder>
+			<cfif this[variables.wheels.class.simpleSorting.sortColumn] eq 0 or this[variables.wheels.class.simpleSorting.sortColumn] gt nextAvailableSortOrder>
+				<cfset this[variables.wheels.class.simpleSorting.sortColumn] = nextAvailableSortOrder>
 			</cfif>
 		</cfif>
 		<cfreturn true>
 	</cffunction>
 	
 	
-	<cffunction name="$updateTableAfterSave" returntype="boolean" mixin="model" output="false">
+	<cffunction name="$simpleSortingUpdateTableAfterSave" returntype="void" mixin="model" output="false">
 		<cfset var loc = {}>
-		<cfif variables.previousSortOrder neq this[$getSortColumn()]>
-			<cfquery name="loc.qry" datasource="#variables.wheels.class.connection.datasource#">
+		<cfif variables.previousSortOrder neq this[variables.wheels.class.simpleSorting.sortColumn]>
+			<cfquery name="loc.simpleSortingUpdateTableAfterSave" attributeCollection="#this.$simpleSortingGetConnection()#">
 			UPDATE	#tableName()#
-			<cfif variables.previousSortOrder gt this[$getSortColumn()]>
-			SET		#$getSortColumn()# = #$getSortColumn()# + 1
-			WHERE	#$getSortColumn()# >= <cfqueryparam cfsqltype="#variables.wheels.class.properties[$getSortColumn()].type#" value="#this[$getSortColumn()]#"> 
-			AND		#$getSortColumn()# < <cfqueryparam cfsqltype="#variables.wheels.class.properties[$getSortColumn()].type#" value="#variables.previousSortOrder#"> 
+			<cfif variables.previousSortOrder gt this[variables.wheels.class.simpleSorting.sortColumn]>
+			SET		#variables.wheels.class.simpleSorting.sortColumn# = #variables.wheels.class.simpleSorting.sortColumn# + 1
+			WHERE	#variables.wheels.class.simpleSorting.sortColumn# >= <cfqueryparam cfsqltype="#variables.wheels.class.properties[variables.wheels.class.simpleSorting.sortColumn].type#" value="#this[variables.wheels.class.simpleSorting.sortColumn]#"> 
+			AND		#variables.wheels.class.simpleSorting.sortColumn# < <cfqueryparam cfsqltype="#variables.wheels.class.properties[variables.wheels.class.simpleSorting.sortColumn].type#" value="#variables.previousSortOrder#"> 
 			<cfelse>
-			SET		#$getSortColumn()# = #$getSortColumn()# - 1
-			WHERE	#$getSortColumn()# <= <cfqueryparam cfsqltype="#variables.wheels.class.properties[$getSortColumn()].type#" value="#this[$getSortColumn()]#"> 
-			AND		#$getSortColumn()# > <cfqueryparam cfsqltype="#variables.wheels.class.properties[$getSortColumn()].type#" value="#variables.previousSortOrder#"> 
+			SET		#variables.wheels.class.simpleSorting.sortColumn# = #variables.wheels.class.simpleSorting.sortColumn# - 1
+			WHERE	#variables.wheels.class.simpleSorting.sortColumn# <= <cfqueryparam cfsqltype="#variables.wheels.class.properties[variables.wheels.class.simpleSorting.sortColumn].type#" value="#this[variables.wheels.class.simpleSorting.sortColumn]#"> 
+			AND		#variables.wheels.class.simpleSorting.sortColumn# > <cfqueryparam cfsqltype="#variables.wheels.class.properties[variables.wheels.class.simpleSorting.sortColumn].type#" value="#variables.previousSortOrder#"> 
 			</cfif>
 			AND		#primaryKey()# <> <cfqueryparam cfsqltype="#variables.wheels.class.properties[primaryKey()].type#" value="#this[primaryKey()]#">
-			<cfloop list="#$getSortScope()#" index="loc.scope">
+			<cfloop list="#variables.wheels.class.simpleSorting.scope#" index="loc.scope">
 			AND 	#loc.scope# = <cfqueryparam cfsqltype="#variables.wheels.class.properties[loc.scope].type#" value="#this[loc.scope]#"> 
 			</cfloop>
 			</cfquery>
 		</cfif>
-		<cfreturn true>
 	</cffunction>
 	
 	
-	<cffunction name="$updateTableAfterDelete" returntype="boolean" mixin="model" output="false">
+	<cffunction name="$simpleSortingUpdateTableAfterDelete" returntype="void" mixin="model" output="false">
 		<cfset var loc = {}>
-		<cfquery name="loc.qry" datasource="#variables.wheels.class.connection.datasource#">
+		<cfquery name="loc.simpleSortingUpdateTableAfterDelete" attributeCollection="#this.$simpleSortingGetConnection()#">
 		UPDATE	#tableName()#
-		SET		#$getSortColumn()# = #$getSortColumn()# - 1
-		WHERE	#$getSortColumn()# > <cfqueryparam cfsqltype="#variables.wheels.class.properties[$getSortColumn()].type#" value="#this[$getSortColumn()]#"> 
-		<cfloop list="#$getSortScope()#" index="loc.scope">
+		SET		#variables.wheels.class.simpleSorting.sortColumn# = #variables.wheels.class.simpleSorting.sortColumn# - 1
+		WHERE	#variables.wheels.class.simpleSorting.sortColumn# > <cfqueryparam cfsqltype="#variables.wheels.class.properties[variables.wheels.class.simpleSorting.sortColumn].type#" value="#this[variables.wheels.class.simpleSorting.sortColumn]#"> 
+		<cfloop list="#variables.wheels.class.simpleSorting.scope#" index="loc.scope">
 		AND 	#loc.scope# = <cfqueryparam cfsqltype="#variables.wheels.class.properties[loc.scope].type#" value="#this[loc.scope]#"> 
 		</cfloop>
 		</cfquery>
-		<cfreturn true>
+	</cffunction>
+	
+	
+	<cffunction name="$simpleSortingGetConnection" returntype="struct" mixin="model" output="false">
+		<cfset var connection = Duplicate(variables.wheels.class.connection)>
+		<cfif not Len(connection.username)>
+			<cfset StructDelete(connection, "username")>
+		</cfif>
+		<cfif not Len(connection.password)>
+			<cfset StructDelete(connection, "password")>
+		</cfif>
+		<cfreturn connection>
 	</cffunction>
 
 
