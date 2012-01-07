@@ -36,7 +36,7 @@
 				<cfif Len(loc.where) gt 0>
 					<cfset loc.where = loc.where & " AND ">
 				</cfif>
-				<cfif StructKeyExists(this, loc.scope)>
+				<cfif StructKeyExists(this, loc.scope) and Len(this[loc.scope])>
 					<cfset loc.where = loc.where & "#loc.scope#='#this[loc.scope]#'">
 				<cfelse>
 					<cfset loc.where = loc.where & "#loc.scope# IS NULL">
@@ -77,7 +77,7 @@
 			</cfif>
 			AND		#primaryKey()# <> <cfqueryparam cfsqltype="#variables.wheels.class.properties[primaryKey()].type#" value="#this[primaryKey()]#">
 			<cfloop list="#variables.wheels.class.simpleSorting.scope#" index="loc.scope">
-			<cfif StructKeyExists(this, loc.scope)>
+			<cfif StructKeyExists(this, loc.scope) and Len(this[loc.scope])>
 			AND 	#loc.scope# = <cfqueryparam cfsqltype="#variables.wheels.class.properties[loc.scope].type#" value="#this[loc.scope]#"> 
 			<cfelse>
 			AND 	#loc.scope# IS NULL
@@ -95,13 +95,25 @@
 		SET		#variables.wheels.class.simpleSorting.sortColumn# = #variables.wheels.class.simpleSorting.sortColumn# - 1
 		WHERE	#variables.wheels.class.simpleSorting.sortColumn# > <cfqueryparam cfsqltype="#variables.wheels.class.properties[variables.wheels.class.simpleSorting.sortColumn].type#" value="#this[variables.wheels.class.simpleSorting.sortColumn]#"> 
 		<cfloop list="#variables.wheels.class.simpleSorting.scope#" index="loc.scope">
-		<cfif StructKeyExists(this, loc.scope)>
+		<cfif StructKeyExists(this, loc.scope) and Len(this[loc.scope])>
 		AND 	#loc.scope# = <cfqueryparam cfsqltype="#variables.wheels.class.properties[loc.scope].type#" value="#this[loc.scope]#"> 
 		<cfelse>
 		AND 	#loc.scope# IS NULL
 		</cfif>
 		</cfloop>
 		</cfquery>
+	</cffunction>
+	
+	
+	<cffunction name="$simpleSortingGetConnection" returntype="struct" mixin="model" output="false">
+		<cfset var connection = Duplicate(variables.wheels.class.connection)>
+		<cfif not Len(connection.username)>
+			<cfset StructDelete(connection, "username")>
+		</cfif>
+		<cfif not Len(connection.password)>
+			<cfset StructDelete(connection, "password")>
+		</cfif>
+		<cfreturn connection>
 	</cffunction>
 
 
