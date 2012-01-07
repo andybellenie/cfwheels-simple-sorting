@@ -2,7 +2,7 @@
 
 	
 	<cffunction name="init" access="public" returntype="any" output="false">
-		<cfset this.version = "1.0.3,1.1" />
+		<cfset this.version = "1.1,1.1.1,1.1.2,1.1.3,1.1.4,1.1.5,1.1.6,1.1.7" />
 		<cfreturn this />
 	</cffunction>
 	
@@ -36,7 +36,11 @@
 				<cfif Len(loc.where) gt 0>
 					<cfset loc.where = loc.where & " AND ">
 				</cfif>
-				<cfset loc.where = loc.where & "#loc.scope#='#this[loc.scope]#'">
+				<cfif StructKeyExists(this, loc.scope)>
+					<cfset loc.where = loc.where & "#loc.scope#='#this[loc.scope]#'">
+				<cfelse>
+					<cfset loc.where = loc.where & "#loc.scope# IS NULL">
+				</cfif>
 			</cfloop>
 		</cfif>
 		<cfset loc.result = Val(this.maximum(property=variables.wheels.class.simpleSorting.sortColumn, where=loc.where, reload=true))>
@@ -48,7 +52,7 @@
 		<cfset var nextAvailableSortOrder = 0>
 		<cfset variables.previousSortOrder = variables.$persistedProperties[variables.wheels.class.simpleSorting.sortColumn]>
 		<cfif StructKeyExists(this,variables.wheels.class.simpleSorting.sortColumn) and hasChanged(variables.wheels.class.simpleSorting.sortColumn)>
-			<cfset nextAvailableSortOrder = $simpleSortingGetMaxSortOrder() + 1>
+			<cfset nextAvailableSortOrder = $getMaxSortOrder() + 1>
 			<cfif this[variables.wheels.class.simpleSorting.sortColumn] eq 0 or this[variables.wheels.class.simpleSorting.sortColumn] gt nextAvailableSortOrder>
 				<cfset this[variables.wheels.class.simpleSorting.sortColumn] = nextAvailableSortOrder>
 			</cfif>
@@ -60,7 +64,7 @@
 	<cffunction name="$simpleSortingUpdateTableAfterSave" returntype="void" mixin="model" output="false">
 		<cfset var loc = {}>
 		<cfif variables.previousSortOrder neq this[variables.wheels.class.simpleSorting.sortColumn]>
-			<cfquery name="loc.simpleSortingUpdateTableAfterSave" attributeCollection="#this.$simpleSortingGetConnection()#">
+			<cfquery name="loc.simpleSortingUpdateTableAfterSave" attributecollection="#this.$simpleSortingGetConnection()#">
 			UPDATE	#tableName()#
 			<cfif variables.previousSortOrder gt this[variables.wheels.class.simpleSorting.sortColumn]>
 			SET		#variables.wheels.class.simpleSorting.sortColumn# = #variables.wheels.class.simpleSorting.sortColumn# + 1
@@ -73,7 +77,11 @@
 			</cfif>
 			AND		#primaryKey()# <> <cfqueryparam cfsqltype="#variables.wheels.class.properties[primaryKey()].type#" value="#this[primaryKey()]#">
 			<cfloop list="#variables.wheels.class.simpleSorting.scope#" index="loc.scope">
+			<cfif StructKeyExists(this, loc.scope)>
 			AND 	#loc.scope# = <cfqueryparam cfsqltype="#variables.wheels.class.properties[loc.scope].type#" value="#this[loc.scope]#"> 
+			<cfelse>
+			AND 	#loc.scope# IS NULL
+			</cfif>
 			</cfloop>
 			</cfquery>
 		</cfif>
@@ -82,26 +90,18 @@
 	
 	<cffunction name="$simpleSortingUpdateTableAfterDelete" returntype="void" mixin="model" output="false">
 		<cfset var loc = {}>
-		<cfquery name="loc.simpleSortingUpdateTableAfterDelete" attributeCollection="#this.$simpleSortingGetConnection()#">
+		<cfquery name="loc.simpleSortingUpdateTableAfterDelete" attributecollection="#this.$simpleSortingGetConnection()#">
 		UPDATE	#tableName()#
 		SET		#variables.wheels.class.simpleSorting.sortColumn# = #variables.wheels.class.simpleSorting.sortColumn# - 1
 		WHERE	#variables.wheels.class.simpleSorting.sortColumn# > <cfqueryparam cfsqltype="#variables.wheels.class.properties[variables.wheels.class.simpleSorting.sortColumn].type#" value="#this[variables.wheels.class.simpleSorting.sortColumn]#"> 
 		<cfloop list="#variables.wheels.class.simpleSorting.scope#" index="loc.scope">
+		<cfif StructKeyExists(this, loc.scope)>
 		AND 	#loc.scope# = <cfqueryparam cfsqltype="#variables.wheels.class.properties[loc.scope].type#" value="#this[loc.scope]#"> 
+		<cfelse>
+		AND 	#loc.scope# IS NULL
+		</cfif>
 		</cfloop>
 		</cfquery>
-	</cffunction>
-	
-	
-	<cffunction name="$simpleSortingGetConnection" returntype="struct" mixin="model" output="false">
-		<cfset var connection = Duplicate(variables.wheels.class.connection)>
-		<cfif not Len(connection.username)>
-			<cfset StructDelete(connection, "username")>
-		</cfif>
-		<cfif not Len(connection.password)>
-			<cfset StructDelete(connection, "password")>
-		</cfif>
-		<cfreturn connection>
 	</cffunction>
 
 
