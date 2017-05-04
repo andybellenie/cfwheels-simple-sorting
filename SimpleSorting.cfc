@@ -52,7 +52,7 @@
 		<cfset var nextAvailableSortOrder = 0>
 		<cfset variables.previousSortOrder = variables.$persistedProperties[variables.wheels.class.simpleSorting.sortColumn]>
 		<cfif StructKeyExists(this,variables.wheels.class.simpleSorting.sortColumn) and hasChanged(variables.wheels.class.simpleSorting.sortColumn)>
-			<cfset nextAvailableSortOrder = $getMaxSortOrder() + 1>
+			<cfset nextAvailableSortOrder = $simpleSortingGetMaxSortOrder() + 1>
 			<cfif this[variables.wheels.class.simpleSorting.sortColumn] eq 0 or this[variables.wheels.class.simpleSorting.sortColumn] gt nextAvailableSortOrder>
 				<cfset this[variables.wheels.class.simpleSorting.sortColumn] = nextAvailableSortOrder>
 			</cfif>
