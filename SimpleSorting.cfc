@@ -106,7 +106,14 @@
 	
 	
 	<cffunction name="$simpleSortingGetConnection" returntype="struct" mixin="model" output="false">
-		<cfset var connection = Duplicate(variables.wheels.class.connection)>
+		<cfset var connection = StructNew()>
+		<cfif StructKeyExists(variables.wheels.class, "connection")>
+			<cfset connection = Duplicate(variables.wheels.class.connection)>
+		<cfelse>
+			<cfset connection.dataSource = variables.wheels.class.dataSource>
+			<cfset connection.username = variables.wheels.class.username>
+			<cfset connection.password = variables.wheels.class.password>
+		</cfif>
 		<cfif not Len(connection.username)>
 			<cfset StructDelete(connection, "username")>
 		</cfif>
